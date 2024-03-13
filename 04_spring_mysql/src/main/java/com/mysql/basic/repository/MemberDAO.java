@@ -33,7 +33,25 @@ public class MemberDAO {
 		}
 	}
 	
-	//ctrl + shfit	+ o => 자동 import 여러개 
+	public void memberJoin(Member member) {
+		try {
+			conn = dataSource.getConnection();
+			
+			String sql = "INSERT INTO member (id, pw, email) VALUES(?, ?, ?)";
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, member.getId());
+			pstmt.setString(2, member.getPw());
+			pstmt.setString(3, member.getEmail());
+			
+			pstmt.executeUpdate();
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			finallyClose();
+		}
+	}
+	//ctrl + shfit	+ o => 자동으로 import 해줌 
 	
 	public ArrayList<Member> getMemberList(){
 		ArrayList<Member> memberList = new ArrayList<Member>();
@@ -63,5 +81,91 @@ public class MemberDAO {
 		
 		return memberList;
 	}
-
+	
+	public int checkMember(Member member) {
+		int check = -1;
+		
+		try {
+			conn = dataSource.getConnection();
+			
+			String sql = "SELECT * FROM member WHERE id=? AND pw=?";
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, member.getId());
+			pstmt.setString(2, member.getPw());
+			
+			rs = pstmt.executeQuery();
+			if(rs.next()) {
+				check = 1;
+			}
+		}catch(Exception e) {
+			e.printStackTrace();
+		}finally {
+			finallyClose();			
+		}
+		
+		return check;
+	}
+	
+	public Member getOneMember(String id) {
+		Member member = new Member();
+		
+		try {
+			conn = dataSource.getConnection();
+			
+			String sql = "SELECT * FROM member WHERE id=?";
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, id);
+			
+			rs = pstmt.executeQuery();
+			if(rs.next()) {
+				member.setNum(rs.getInt(1));
+				member.setId(rs.getString(2));
+				member.setPw(rs.getString(3));
+				member.setEmail(rs.getString(4));
+			}
+		}catch(Exception e) {
+			e.printStackTrace();
+		}finally {
+			finallyClose();			
+		}
+		
+		return member;
+	}
+	
+	public int updateMember(Member member) {
+		try {
+			conn = dataSource.getConnection();
+			
+			String sql = "UPDATE member SET pw=?, email=? WHERE id=?";
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, member.getPw());
+			pstmt.setString(2, member.getEmail());
+			pstmt.setString(3, member.getId());
+			
+			return pstmt.executeUpdate();
+			
+		}catch(Exception e) {
+			e.printStackTrace();
+		}finally {
+			finallyClose();			
+		}
+		return 0;
+	}
+	
+	public int deleteMember(String id) {
+		try {
+			conn = dataSource.getConnection();
+			
+			String sql = "delete from member WHERE id=?";
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, id);
+			return pstmt.executeUpdate();
+			
+		}catch(Exception e) {
+			e.printStackTrace();
+		}finally {
+			finallyClose();			
+		}
+		return 0;
+	}
 }

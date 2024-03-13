@@ -1,15 +1,16 @@
 package com.mysql.basic.controller;
 
-import java.net.http.HttpRequest;
 import java.util.ArrayList;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
@@ -40,5 +41,77 @@ public class MemberController {
 		return "/member/list";
 	}
 
+	@GetMapping("/member/joinForm")
+	public String joinForm() {
+		return "/member/joinForm";
+	}
+	
+	@PostMapping("/member/joinPro")
+	public String joinPro(Member member) {
+		System.out.println("Member=" + member);
+		memberDAO.memberJoin(member);
+		return "redirect:/member/list";
+	}
+	
+	@GetMapping("/member/loginForm")
+	public String loginForm() {
+		return "/member/loginForm";
+	}
+	
+	@PostMapping("/member/loginPro")
+	public String loginPro(Member member, Model model, HttpSession session) {
+		int check = memberDAO.checkMember(member);
+		if(check == 1) {
+			session.setAttribute("log", member.getId());
+		}
+		model.addAttribute("check", check);
+//		model.addAttribute("id", member.getId());
+		return "/member/loginPro";
+	}
 
+	@GetMapping("/member/logout")
+	public String logout(HttpSession session) {
+		session.invalidate();
+		return "redirect:/";
+	}
+	
+	@GetMapping("/member/modifyForm")
+	public String modifyForm(Model model, HttpSession session) {
+//		if(session.getAttribute("log") == null) {
+//			return "/";
+//		}
+		if(session.getAttribute("log") != null) {
+			Member member = memberDAO.getOneMember((String)session.getAttribute("log"));
+			model.addAttribute("member", member);
+		}
+		
+		return "/member/modifyForm";
+	}
+	
+	@PostMapping("/member/modifyPro")
+	public String modifyPro(Member member, HttpSession session) {
+		if(session.getAttribute("log") == null) {
+			return "redirect:/";
+		}
+		member.setId((String)session.getAttribute("log"));
+		int check = memberDAO.updateMember(member);
+		if(check == 0) {
+			System.out.println("업데이트 실패");
+		}else {
+			System.out.println("업데이트 성공");
+		}
+		return "redirect:/member/list";
+	}
+	
+	@GetMapping("/member/delete")
+	public String delete(Model model, HttpSession session) {
+		if(session.getAttribute("log") == null) {
+			model.addAttribute("check", 0);
+			return "redirect:/";
+		}
+		int check = memberDAO.deleteMember((String)session.getAttribute("log"));
+		model.addAttribute("check", check);
+		session.invalidate();
+		return "/member/deletePro";
+	}
 }
