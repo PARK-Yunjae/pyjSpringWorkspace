@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import kr.board.entity.Member;
@@ -33,6 +34,12 @@ public class MemberController {
 	public String loginForm() {
 		return "member/memLoginForm";
 	}
+	
+	@GetMapping("/memUpdateForm.do")
+	public String UpdateForm() {
+		return "member/memUpdateForm";
+	}
+	
 	
 	// model 객체는 request 객체를 forward 할때만 값을 전달해준다 
 	// RedirectAttributes => redirect: 할때 값을 들고 가고 새로고침하면 값이 사라진다 
@@ -78,11 +85,95 @@ public class MemberController {
 	}
 	
 	@PostMapping("/memRegister.do") //@ModelAttribute        // @RequestParam(value="memPassword1")
-	public String registerMember( Member m , String memPassword1 , String gmemPassword2) {
-		System.out.println("register m = " + m );
-		return "redirect:/";
+	public String registerMember( Member m , String memPassword1 , String memPassword2, 
+			RedirectAttributes rttr , HttpSession session 
+			) {
+		System.out.println("m = " + m );
+		System.out.println(" === memRegister ===  ");
+		if(!m.nullValueCheck()) {
+			rttr.addFlashAttribute("msgType" ,"실패 메세지");
+			rttr.addFlashAttribute("msg" ,"모든 값을 넣어주세요 ");
+			return "redirect:/member/memJoin.do";
+		}
+		if(!memPassword1.equals(memPassword2)) {
+			rttr.addFlashAttribute("msgType" ,"실패 메세지");
+			rttr.addFlashAttribute("msg" ,"패스워드 값이 서로 다릅니다 ");
+			return "redirect:/member/memJoin.do";
+		}
+		
+		m.setMemPassword(memPassword1);
+		m.setMemProfile(""); // 사진이 없다는 의미 
+		
+		int result = memberMapper.register(m);
+		if(result == 1) {
+			rttr.addFlashAttribute("msgType" ,"성공 메세지");
+			rttr.addFlashAttribute("msg" ,"회원가입 성공했습니다 ");
+			session.setAttribute("mvo", m);
+			return "redirect:/";
+		}else {
+			rttr.addFlashAttribute("msgType" ,"실패 메세지");
+			rttr.addFlashAttribute("msg" ," 회원가입 실패 다시시도해주세요 ");
+			return "redirect:/member/memJoin.do";
+		}
+
 	}
 	
 	
+	@GetMapping("/memRegisterCheck.do")
+	public @ResponseBody int memRegisterCheck( String memID ) {
+		System.out.println("memRegisterCheck memId = " + memID );
+		Member member = memberMapper.registerCheck(memID);
+		
+		return member == null ? 1 : 0;
+	}
+	
+	@PostMapping("/memUpdate.do")  // @ModelAttribute  new Member(), setter
+	public String memUpdate( @ModelAttribute Member m, RedirectAttributes rttr ,
+		                      @RequestParam String memPassword1, String memPassword2, HttpSession session) {
 
+		if(!m.nullValueCheck()) {
+			rttr.addFlashAttribute("msgType" ,"실패 메세지");
+			rttr.addFlashAttribute("msg" ,"모든 값을 넣어주세요 ");
+			return "redirect:/member/memUpdateForm.do";
+		}
+		
+		if(!memPassword1.equals(memPassword2)) {
+			rttr.addFlashAttribute("msgType" ,"실패 메세지");
+			rttr.addFlashAttribute("msg" ,"패스워드 값이 서로 다릅니다 ");
+			return "redirect:/member/memUpdateForm.do";
+		}
+		
+		m.setMemPassword(memPassword2);
+		System.out.println("update m = " + m );
+		
+		int result = memberMapper.memUpdate(m);
+		if(result == 1) {
+			rttr.addFlashAttribute("msgType" ,"성공 메세지");
+			rttr.addFlashAttribute("msg" ,"회원 정보 수정완료  ");
+			
+			// 회원 정보업데이트 된 세션으로 재등록 
+			session.setAttribute("mvo", m);
+			
+			return "redirect:/";
+		}else {
+			rttr.addFlashAttribute("msgType" ,"실패 메세지");
+			rttr.addFlashAttribute("msg" ,"회원 정보 수정실패  ");
+			return "redirect:/member/memUpdateForm.do";
+		}
+
+	}
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 }
